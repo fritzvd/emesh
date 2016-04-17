@@ -1,0 +1,16 @@
+{
+  "name": "emesh",
+  "version": "1.0.0",
+  "description": "This will be my first attempt at creating a NES game. Most of what I am doing is being taught to my by http://nesdoug.com",
+  "main": "index.js",
+  "dependencies": {
+    "gulp": "^3.9.0",
+    "nes-tmx": "^0.2.0"
+  },
+  "scripts": {
+    "test": "gulp dev",
+    "build": "gulp"
+  },
+  "author": "",
+  "license": "ISC"
+}

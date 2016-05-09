@@ -8,8 +8,6 @@ void __fastcall__ UnRLE(int data);
 
 void* __fastcall__ memcpy (void* dest, const void* src, int count);
 
-
-
 #define PPU_CTRL		*((unsigned char*)0x2000)
 #define PPU_MASK		*((unsigned char*)0x2001)
 #define PPU_STATUS		*((unsigned char*)0x2002)
@@ -54,14 +52,14 @@ unsigned char C_MAP[256]; // collision map
 
 /// BG stuff
 
-//these are the 4 backgrounds
 //generated with NES Screen Tool, with RLE option on
 #include "nametable.h" //called n1
-#include "backgrounds/2.h" //called n2
+// // #include "backgrounds/1.h" //called n2
+// #include "backgrounds/2.h" //called n2
 // #include "backgrounds/3.h" //called n3
 // #include "backgrounds/4.h" //called n4
 
-const int All_Backgrounds[] = {(int) &nameTable , (int) &n2 };
+const int All_Backgrounds[] = {(int) &nameTable};
 //the address of each background
 
 //collision data, made by exporting csv from Tiled, and slight modification
@@ -138,7 +136,7 @@ void Draw_Background(void) {
 	Wait_Vblank();	//don't turn on screen until in v-blank
 	All_On();
 	++which_BGD;
-	if (which_BGD == 4) //shuffles between 0-3
+	if (which_BGD == 0) //shuffles between 0-3
 		which_BGD = 0;
 }
 

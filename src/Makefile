@@ -10,15 +10,15 @@ clean:
 reset.o: reset.s
 	ca65 reset.s
 
-nesasmhelpers.o: nesasmhelpers.s
-	ca65 nesasmhelpers.s
+neslib.o: neslib.s
+	ca65 neslib.s
 
 %.o: %.c
 	cc65 -Oi $< --add-source -t nes
 	ca65 $*.s
-	rm $*.s
+	# rm $*.s
 
-%.nes: %.o reset.o nesasmhelpers.o
-	ld65 -o $@ reset.o nesasmhelpers.o -C nes.cfg $< nes.lib
-	rm nesasmhelpers.o reset.o
+%.nes: %.o reset.o neslib.o
+	ld65 -o $@ reset.o neslib.o -C nes.cfg $< nes.lib
+	rm neslib.o reset.o
 	mv main.nes ../emesh.nes

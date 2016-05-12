@@ -1,7 +1,3 @@
-//simple Hello World, for cc65, for NES
-//doug fraker 2015
-//feel free to reuse any code here
-
 void __fastcall__ Wait_Vblank(void);
 
 void __fastcall__ UnRLE(int data);

@@ -5,7 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "gulp": "^3.9.0",
-    "nes-tmx": "^0.2.0"
+    "nes-tmx": "^1.0.0"
   },
   "scripts": {
     "test": "gulp dev",

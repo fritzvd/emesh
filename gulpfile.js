@@ -4,7 +4,7 @@ var nestmx = require('nes-tmx')
 
 var paths = {
   graphics: 'gfx/tiles.png',
-  tilemap: 'gfx/tilemap.tmx',
+  tilemap: 'gfx/*.tmx',
   src: 'src/**/*'
 }
 
@@ -19,19 +19,21 @@ gulp.task('dev', function() {
 })
 
 function createTiles () {
-  var pilbmp2nes = child_process.spawn(
+  console.log('Making a tileset')
+  var spritetiles = child_process.spawn(
     './tools/pilbmp2nes.py', ['-i', 'gfx/tiles.png', '-o', 'src/tiles.chr'])
-    pilbmp2nes.stdout.on('data', function (d) {
+    spritetiles.stdout.on('data', function (d) {
       console.log('' + d)
     })
-    pilbmp2nes.stderr.on('data', function (d) {
+    spritetiles.stderr.on('data', function (d) {
       console.error('' + d)
     })
-  return pilbmp2nes
+  return spritetiles
 }
 
 function nameTables () {
-  nestmx('gfx/tilemap.tmx', 'src/collision.h', 'src/nametable.h')
+  nestmx('gfx/title.tmx', 'src/title.h')
+  nestmx('gfx/level.tmx', 'src/level.h')
 }
 
 function make () {

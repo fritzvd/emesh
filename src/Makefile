@@ -7,18 +7,15 @@ all: main.nes
 clean:
 	@rm -fv *.nes
 
-reset.o: reset.s
-	ca65 reset.s
-
-neslib.o: neslib.s
-	ca65 neslib.s
+crt0.o: base/crt0.s
+	ca65 base/crt0.s
 
 %.o: %.c
 	cc65 -Oi $< --add-source -t nes
 	ca65 $*.s
-	# rm $*.s
+	rm $*.s
 
-%.nes: %.o reset.o neslib.o
-	ld65 -o $@ reset.o neslib.o -C nes.cfg $< nes.lib
-	rm neslib.o reset.o
+%.nes: %.o crt0.o
+	ld65 -o $@ base/crt0.o -C base/nes.cfg $< base/nes.lib
+	rm *.o
 	mv main.nes ../emesh.nes

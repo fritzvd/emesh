@@ -1,163 +1,193 @@
-void __fastcall__ Wait_Vblank(void);
+//this example code shows how to put some text in nametable
+//it assumes that you have ASCII-encoded font in the CHR tiles $00-$3f
 
-void __fastcall__ UnRLE(int data);
-
-void* __fastcall__ memcpy (void* dest, const void* src, int count);
-
-#define PPU_CTRL		*((unsigned char*)0x2000)
-#define PPU_MASK		*((unsigned char*)0x2001)
-#define PPU_STATUS		*((unsigned char*)0x2002)
-#define SCROLL			*((unsigned char*)0x2005)
-#define PPU_ADDRESS		*((unsigned char*)0x2006)
-#define PPU_DATA		*((unsigned char*)0x2007)
-
-#define OAM_ADDRESS *((unsigned char*)0x2003)
-#define OAM_DMA *((unsigned char*)0x4014)
-//Globals
-
-#pragma bss-name(push, "ZEROPAGE")
-unsigned char index;
-unsigned char NMI_flag;
-unsigned char Frame_Count;
-unsigned char index4;
-unsigned char X1;
-unsigned char Y1;
-unsigned char state;
-unsigned char state4;
-
-unsigned char new_background;
-unsigned char which_BGD;
-int BGD_address;
-unsigned char *Caddress; //Caddress is an int that points to a char
-unsigned char X1_Right_Side;	//for collision test
-unsigned char X1_Left_Side;
-unsigned char Y1_Bottom;
-unsigned char Y1_Top;
-unsigned char corner;
+#include "base/neslib.h"
+#include "title.h"
+#include "level.h"
 
 
-// needs to be here for ZP. OAM will overflow
-#include "inputstate.c"
+#define NTADR(x,y) ((0x2000|((y)<<5)|x))
+#define PPU_ATTRIB_TABLE_0  0x23c0 // attribute table for nametable 0
+#define PPU_ATTRIB_TABLE_1  0x27c0 // attribute table for nametable 1
+#define PPU_ATTRIB_TABLE_2  0x2bc0 // attribute table for nametable 2
+#define PPU_ATTRIB_TABLE_3  0x2fc0 // attribute table for nametable 3
+#define STRING_OFFSET  0xa0
 
-#pragma bss-name(push, "OAM")
-unsigned char SPRITES[256];
+static unsigned char spr;
+static unsigned char currentSlide = 0;
 
+void put_str(unsigned int adr,const char *str)
+{
+	vram_adr(adr);
+	while(1)
+	{
+		if(!*str) break;
 
-#pragma bss-name(push, "MAP")
-unsigned char C_MAP[256]; // collision map
-
-/// BG stuff
-
-//generated with NES Screen Tool, with RLE option on
-#include "nametable.h" //called n1
-// // #include "backgrounds/1.h" //called n2
-// #include "backgrounds/2.h" //called n2
-// #include "backgrounds/3.h" //called n3
-// #include "backgrounds/4.h" //called n4
-
-const int All_Backgrounds[] = {(int) &nameTable};
-//the address of each background
-
-//collision data, made by exporting csv from Tiled, and slight modification
-#include "backgrounds/1.csv" //called c1
-#include "backgrounds/2.csv" //called c2
-#include "backgrounds/3.csv" //called c3
-#include "backgrounds/4.csv" //called c4
-
-const int All_Collision_Maps[] = {(int) &c1, (int) &c2, (int) &c3, (int) &c4 };
-
-// end bg
-
-#include "palette.c"
-#include "helpers.c"
-#include "sprite.c"
-#include "collision.c"
-
-#define Going_Right 0
-#define Going_Down	1
-#define Going_Left	2
-#define Going_Up	3
-
-void check_Start(void){
-	if ( ((joypad1 & START) > 0) && ((joypad1old & START) == 0) ){
-		++new_background;
+		vram_put((*str++) + STRING_OFFSET);//-0x20 because ASCII code 0x20 is placed in tile 0 of the CHR
 	}
 }
 
-void move_logic(void) {
-	if ((joypad1 & RIGHT) > 0) {
-		state = Going_Right;
-		++X1;
-	}
-	if ((joypad1 & LEFT) > 0) {
-		state = Going_Left;
-		--X1;
-	}
-
-	collide_Check_LR();
-
-	if ((joypad1 & DOWN) > 0) {
-		state = Going_Down;
-		++Y1;
-	}
-
-	if ((joypad1 & UP) > 0) {
-		state = Going_Up;
-		--Y1;
-	}
-	collide_Check_UD();
-}
-
-void every_frame (void) {
-	OAM_ADDRESS = 0;
-	OAM_DMA = 2;
-	PPU_CTRL = 0x90;
-	PPU_MASK = 0x1e; // to be replaced with reset_scroll and all_on?
-	SCROLL = 0; // wtf
-	SCROLL = 0;
-	Get_Input();
-}
-
-void Draw_Background(void) {
-	All_Off();
-	PPU_ADDRESS = 0x20;
-	PPU_ADDRESS = 0x00;
-	BGD_address = All_Backgrounds[which_BGD];
-	UnRLE(BGD_address);	//uncompresses our BG tiles
-
-	//now load the collision map to RAM
-	(int)Caddress = All_Collision_Maps[which_BGD];
-	memcpy (&C_MAP, Caddress, 240);
-
-	Wait_Vblank();	//don't turn on screen until in v-blank
-	All_On();
-	++which_BGD;
-	if (which_BGD == 0) //shuffles between 0-3
-		which_BGD = 0;
-}
-
-void main (void) {
-
-	All_Off();
-
-	X1 = 0x7f;
-	Y1 = 0x77;
-	Load_Palette();
-	Reset_Scroll();
-	All_On();
-	//infinite loop
-	while (1) {
-		while (NMI_flag == 0);
-		NMI_flag = 0;
-		if (new_background > 0) {
-			// PPU_Update();
-			Draw_Background();
-			// PPU_flag;
-			new_background = 0;
-		}
-		every_frame();
-		move_logic();
-		check_Start();
-		update_Sprites();
-	}
+const unsigned char palSprites[16]={
+	0x0d,0x15,0x25,0x25,
+	0x0d,0x19,0x29,0x39,
+	0x0d,0x11,0x21,0x31,
+	0x0d,0x17,0x27,0x37
 };
+
+const unsigned char palBG [16]={
+	0x0d,0x21,0x26,0x38,
+	0x0d,0x14,0x21,0x31,
+	0x0d,0x29,0x16,0x26,
+	0x0d,0x09,0x19,0x29 };
+
+void make_slide() {
+	ppu_off();
+
+	ppu_on_all();
+}
+
+void next_slide() {
+	// currentSlide++;
+	currentSlide = 0;
+}
+
+void prev_slide () {
+	currentSlide = 0;
+}
+
+const unsigned char sprPlayer[]={
+	0, 0,0x05,0,
+	8, 0,0x20,0,
+	0, 7,0x06,0,
+	8, 7,0x21,0,
+	128
+};
+
+
+static unsigned char i, bg_bright,spr_bright;
+
+
+void fade_screen_in(void)
+{
+	for(i=0;i<16;i++)
+	{
+		ppu_wait_nmi();
+		if(!(i&3))
+		{
+			bg_bright++;
+			pal_bg_bright(bg_bright);
+			spr_bright++;
+			pal_spr_bright(spr_bright);
+		}
+	}
+}
+
+void fade_screen_out(void)
+{
+	for(i=0;i<16;i++)
+	{
+		ppu_wait_nmi();
+		if(!(i&3)) {
+			bg_bright--;
+			pal_bg_bright(bg_bright);
+			spr_bright--;
+			pal_spr_bright(spr_bright);
+		}
+	}
+}
+
+unsigned char screen_state; // 0 == title 1 == game 2 == bla
+
+void start_title_screen () {
+	screen_state = 0;
+	fade_screen_in();
+	ppu_off();
+	pal_bg(palBG);
+	bank_bg(1);
+	vram_adr(NAMETABLE_A);
+	vram_unrle(title);
+	put_str(NTADR_A(11, 22), "PRESS START");
+	ppu_on_all();
+}
+
+void start_game_screen () {
+	screen_state = 1;
+	fade_screen_in();
+	ppu_off();
+	pal_bg(palBG);
+	bank_bg(1);
+	vram_adr(NAMETABLE_A);
+	vram_unrle(level);
+	vram_adr(NAMETABLE_C);
+	vram_unrle(title);
+
+	pal_col(1,0x28);//set white color
+
+	bank_spr(0);
+	ppu_on_all();
+	spr = oam_spr(60, 60, 0x40, 1&3, spr);
+}
+
+int x;
+int y;
+
+void game_logic () {
+	spr = oam_meta_spr(x, y, spr, sprPlayer);
+}
+
+void input (void) {
+	static unsigned char joy;
+
+	// joy=pad_trigger(0);
+	joy=pad_poll(0);
+
+	if (screen_state == 1) {
+		if(joy & PAD_UP) {
+			y--;
+			scroll(x, y);
+		}
+		if(joy & PAD_DOWN) {
+			y++;
+			scroll(x, y);
+		}
+
+		if(joy & PAD_RIGHT) {
+			x++;
+			scroll(x, y);
+		}
+		if(joy & PAD_LEFT) {
+			x--;
+			scroll(x, y);
+		}
+	}
+
+	if (screen_state == 0) {
+		if (joy & PAD_START) {
+			fade_screen_out();
+			start_game_screen();
+		}
+	}
+}
+
+void main(void) {
+
+	x = 10;
+	y = 80;
+	pal_spr(palSprites);
+
+	start_title_screen();
+	ppu_on_all();
+	// fade_screen_in();
+
+
+
+	while(1) {
+		ppu_wait_nmi();
+		set_vram_update(NULL);//disable update just in case, not really needed in this example
+
+		if (screen_state == 1) {
+			game_logic();
+		}
+		input();
+	}
+}
